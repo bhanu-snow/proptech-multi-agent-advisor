@@ -1,13 +1,36 @@
 import streamlit as st
 from dotenv import load_dotenv
+from langchain_core.messages import HumanMessage
+from graph.supervisor import graph
+from config import COUNTRY
+
 load_dotenv()
 
 st.set_page_config(page_title="PropTech Multi-Agent Advisor", layout="wide")
 st.title("🏠 PropTech Multi-Agent Real Estate Advisor")
-st.caption(f"Country: {st.session_state.get('country', 'UAE')} | LLM: {st.session_state.get('llm_provider', 'ollama')}")
+st.caption(f"Country: {COUNTRY} | LLM: {st.session_state.get('llm_provider', 'ollama')} | Data: local Polars")
 
-st.success("✅ Foundation ready! Local LangGraph + Polars + Docker running.")
-st.info("Next step: We will add the 5 real agents one by one. Reply 'Step 1 done' when this app runs.")
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-if st.button("Pull Ollama model (first time only)"):
-    st.write("Run in terminal: docker exec ollama ollama pull llama3.1:8b")
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
+
+if prompt := st.chat_input("Ask about real estate (e.g., 'Summarize Dubai market prices')"):
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
+
+    with st.chat_message("assistant"):
+        with st.spinner("Agents thinking..."):
+            config = {"configurable": {"thread_id": "1"}}  # For memory
+            initial_state = {
+                "messages": [HumanMessage(content=prompt)],
+                "country": COUNTRY,
+            }
+            result = graph.invoke(initial_state, config=config)
+            response = result["messages"][-1].content
+            st.markdown(response)
+    
+    st.session_state.messages.append({"role": "assistant", "content": response})

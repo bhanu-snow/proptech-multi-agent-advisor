@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -6,13 +7,19 @@ load_dotenv()
 COUNTRY = os.getenv("COUNTRY", "UAE")          # "UAE" | "KSA" | "INDIA"
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "ollama")  # "ollama" | "bedrock" | "snowflake_cortex"
 DATA_BACKEND = os.getenv("DATA_BACKEND", "local_polars")  # "local_polars" | "aws_s3" | "snowflake"
+AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 
-# Country-specific data paths (add real CSVs later)
+
+# Real paths – relative to project root
+DATA_DIR = Path("data")
 DATA_PATHS = {
-    "UAE": "data/dubai_pulse_sample.csv",
-    "KSA": "data/aqar_ksa_sample.csv",
-    "INDIA": "data/india_rera_sample.csv"
+    "UAE": DATA_DIR / "dubai_property_transactions_sample.csv",
+    "KSA": DATA_DIR / "aqar_ksa_sample.csv",
+    "INDIA": DATA_DIR / "india_rera_sample.csv",
 }
 
-# Future Bedrock/Snowflake keys will go here
-AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
+def get_data_path():
+    path = DATA_PATHS.get(COUNTRY)
+    if path and path.exists():
+        return path
+    raise FileNotFoundError(f"No data file for {COUNTRY}. Checked: {path}")
