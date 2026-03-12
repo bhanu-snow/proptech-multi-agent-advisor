@@ -1,36 +1,56 @@
 import polars as pl
 from pathlib import Path
-from config import COUNTRY, get_data_path
+from config import get_data_path, COUNTRY
 
-def get_real_estate_data(limit: int = 500) -> pl.DataFrame:
-    """Load and lightly clean real estate data for the selected country."""
+def get_real_estate_data(limit: int = 500) -> pl.LazyFrame:
+    """Load real estate data lazily, with robust column normalization."""
     path = get_data_path()
 
-    # Column name variations across datasets – normalize
-    column_map = {
-        "location": ["area", "neighborhood", "district", "project_name", "location"],
-        "price": ["price", "sale_price", "rent_price", "amount"],
-        "beds": ["bedrooms", "beds", "no_of_bedrooms"],
-        "sqft": ["area_sqft", "size_sqft", "built_up_area", "area"],
-    }
+    df = pl.scan_csv(path, infer_schema_length=100000)
 
-    df = pl.read_csv(path, infer_schema_length=10000)
+    # More comprehensive mapping (case-insensitive check)
+    rename_map = {}
+    columns_lower = {c.lower(): c for c in df.columns}
 
-    # Try to rename columns to standard names
-    for std_col, possible in column_map.items():
-        for col in possible:
-            if col in df.columns:
-                df = df.rename({col: std_col})
-                break
+    # Price columns
+    price_candidates = ["price", "trans_value", "sale_price", "amount", "transvalue", "value", "saleamount"]
+    for cand in price_candidates:
+        if cand in columns_lower:
+            rename_map[columns_lower[cand]] = "price"
+            break
 
-    # Keep only useful columns if they exist
-    keep_cols = ["location", "price", "beds", "sqft"]
-    existing = [c for c in keep_cols if c in df.columns]
-    df = df.select(existing)
+    # Location columns
+    loc_candidates = ["area", "neighborhood", "district", "area_en", "project_en", "master_project_en", "location", "project_name", "city"]
+    for cand in loc_candidates:
+        if cand in columns_lower:
+            rename_map[columns_lower[cand]] = "location"
+            break
 
-    # Basic cleaning
-    df = df.filter(pl.col("price").is_not_null())
-    if "price" in df.columns:
-        df = df.with_columns(pl.col("price").cast(pl.Float64))
+    # Beds / rooms
+    beds_candidates = ["bedrooms", "rooms_en", "beds", "no_of_bedrooms"]
+    for cand in beds_candidates:
+        if cand in columns_lower:
+            rename_map[columns_lower[cand]] = "beds"
+            break
 
-    return df.head(limit).lazy()  # lazy for efficiency
+    # Sqft / area
+    sqft_candidates = ["actual_area", "procedure_area", "size", "area_sqft", "built_up_area", "area", "project_area_(sqmts)"]
+    for cand in sqft_candidates:
+        if cand in columns_lower:
+            rename_map[columns_lower[cand]] = "sqft"
+            break
+
+    if rename_map:
+        df = df.rename(rename_map)
+
+    # Select only what we might use (safe if columns missing)
+    possible_cols = ["location", "price", "beds", "sqft"]
+    existing = [c for c in possible_cols if c in df.columns]
+    if not existing:
+        # Fallback to all columns if nothing matched
+        df = df.select(pl.all())
+    else:
+        df = df.select(existing)
+
+    # Defer filter until after collect (avoid lazy schema crash)
+    return df.head(limit)  # keep lazy, but head is safe

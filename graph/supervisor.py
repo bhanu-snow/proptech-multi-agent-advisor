@@ -15,7 +15,11 @@ class AgentState(TypedDict):
 llm = get_llm()
 
 def supervisor(state: AgentState) -> AgentState:
-    last_msg = state["messages"][-1].content.lower()
+    last_msg = state["messages"][-1].content.lower().strip()
+
+    # Greetings / chit-chat → route to researcher (which now handles them fast)
+    if len(last_msg) < 20 and any(g in last_msg for g in ["hi", "hello", "hey", "sup", "yo", "greetings"]):
+        return {"next_agent": "market_researcher"}
 
     # Simple keyword routing (modern: can be replaced with small LLM classifier later)
     if any(word in last_msg for word in ["value", "worth", "valuation", "price estimate", "fair price"]):
