@@ -3,6 +3,7 @@ from langchain_core.messages import BaseMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate
 from utils.llm_factory import get_llm
 from tools.data_fetcher import get_real_estate_data
+import polars as pl
 
 class AgentState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], "add_messages"]

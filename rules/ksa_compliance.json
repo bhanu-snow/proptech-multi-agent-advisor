@@ -1,0 +1,20 @@
+{
+  "country": "KSA",
+  "key_rules": [
+    {
+      "id": "foreign_ownership_2026",
+      "title": "Foreign Ownership Law (effective Jan 2026)",
+      "description": "Non-Saudis can own property in designated zones (Vision 2030). Restricted in Makkah/Madinah. Requires approval in some cases.",
+      "mandatory": false,
+      "applies_to": ["purchase", "investment"],
+      "penalty": "Invalid ownership, fines"
+    },
+    {
+      "id": "rega_brokerage",
+      "title": "Electronic Platforms & Brokerage",
+      "description": "All real estate platforms/brokers must be licensed by REGA. Contracts must comply with transparency and anti-fraud rules.",
+      "mandatory": true,
+      "applies_to": ["brokerage", "platforms like Aqar"]
+    }
+  ]
+}

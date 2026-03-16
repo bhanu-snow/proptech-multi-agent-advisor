@@ -1,5 +1,6 @@
 import json
 from typing import TypedDict, Annotated, Sequence, Literal
+from graph.compliance import compliance_agent
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_core.messages import BaseMessage, HumanMessage,AIMessage
@@ -39,7 +40,7 @@ Your job:
 Response format (JSON only, no extra text):
 {{
   "on_topic": true/false,
-  "category": "market_research" / "valuation" / null,
+  "category": "market_research" / "valuation" / "compliance" / null,
   "reply": "your natural response text here (only if on_topic=false)"
 }}"""),
         ("human", f"User message: {last_msg}")
@@ -62,6 +63,8 @@ Response format (JSON only, no extra text):
         category = decision.get("category")
         if category == "market_research":
             next_agent = "market_researcher"
+        elif category == "compliance":
+            next_agent = "compliance"
         elif category == "valuation":
             next_agent = "valuator"
         else:
@@ -82,6 +85,8 @@ workflow = StateGraph(state_schema=AgentState)
 workflow.add_node("supervisor", supervisor)
 workflow.add_node("market_researcher", market_researcher)
 workflow.add_node("valuator", valuator_agent)
+workflow.add_node("compliance", compliance_agent)
+
 
 workflow.add_edge(START, "supervisor")
 workflow.add_conditional_edges(
@@ -90,11 +95,13 @@ workflow.add_conditional_edges(
     {
         "market_researcher": "market_researcher",
         "valuator": "valuator",
+        "compliance": "compliance",
         "end": END,
     }
 )
 workflow.add_edge("market_researcher", END)
 workflow.add_edge("valuator", END)
+workflow.add_edge("compliance", END)
 
 memory = MemorySaver()
 graph = workflow.compile(checkpointer=memory)

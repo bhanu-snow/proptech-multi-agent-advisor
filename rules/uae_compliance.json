@@ -1,0 +1,28 @@
+{
+  "country": "UAE",
+  "key_rules": [
+    {
+      "id": "ejari_dubai",
+      "title": "Ejari Registration (Dubai)",
+      "description": "All tenancy contracts must be registered with Ejari (RERA/DLD). Unregistered contracts are not legally enforceable and cannot be used for DEWA, visa, or disputes.",
+      "mandatory": true,
+      "applies_to": ["rentals", "leases"],
+      "penalty": "Fines, invalid contract, legal disputes"
+    },
+    {
+      "id": "tawtheeq_abu_dhabi",
+      "title": "Tawtheeq Registration (Abu Dhabi)",
+      "description": "Mandatory registration of tenancy contracts via Tawtheeq system. Required for legal protection and services.",
+      "mandatory": true,
+      "applies_to": ["rentals", "leases"],
+      "penalty": "Contract invalidity, service denial"
+    },
+    {
+      "id": "rera_offplan",
+      "title": "Off-plan Project Rules",
+      "description": "Developers must register off-plan projects, use escrow accounts (70% buyer funds protected), provide quarterly updates.",
+      "mandatory": true,
+      "applies_to": ["off-plan purchases", "new developments"]
+    }
+  ]
+}

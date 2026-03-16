@@ -1,0 +1,26 @@
+{
+  "country": "INDIA",
+  "key_rules": [
+    {
+      "id": "rera_registration",
+      "title": "Mandatory RERA Project Registration",
+      "description": "All projects >500 sqm or >8 apartments must be registered with state RERA. Non-registration illegal.",
+      "mandatory": true,
+      "applies_to": ["new projects", "sales"]
+    },
+    {
+      "id": "escrow_70_percent",
+      "title": "70% Escrow Account Rule",
+      "description": "70% of buyer funds must go to separate escrow account. Quarterly progress updates mandatory.",
+      "mandatory": true,
+      "applies_to": ["under-construction projects"]
+    },
+    {
+      "id": "rera_2.0_2026",
+      "title": "RERA 2.0 Updates (2026)",
+      "description": "Stricter penalties for delays, mandatory audits, faster dispute resolution, standardized agreements.",
+      "mandatory": true,
+      "applies_to": ["all projects"]
+    }
+  ]
+}
