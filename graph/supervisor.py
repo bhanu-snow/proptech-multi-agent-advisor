@@ -12,7 +12,10 @@ from graph.valuator import valuator_agent
 class AgentState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], "add_messages"]
     country: str
-    next_agent: Literal["market_researcher", "valuator", "end"]
+    next_agent: Literal["market_researcher", "valuator","compliance", "end"]
+    market_summary: str = ""          
+    valuation_summary: str = ""       
+    compliance_summary: str = ""
 
 llm = get_llm()
 

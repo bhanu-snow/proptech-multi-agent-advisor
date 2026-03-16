@@ -16,6 +16,7 @@ def market_researcher(state: AgentState) -> AgentState:
     df = df_lazy.collect()                     # materialize here
 
     row_count = df.shape[0]                     # correct way
+    summary = f"Loaded {row_count} records for {state['country']}."
 
     if row_count == 0 or not df.columns:
         summary = f"No data loaded for {state['country']} (empty file or loading issue)."
@@ -44,5 +45,6 @@ def market_researcher(state: AgentState) -> AgentState:
 
     return {
         "messages": state["messages"] + [AIMessage(content=response_text)],
+        "market_summary": summary,
         "data_summary": summary
     }

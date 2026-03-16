@@ -17,6 +17,8 @@ def valuator_agent(state: AgentState) -> AgentState:
     df = df_lazy.collect()  # materialize early once
 
     row_count = df.shape[0]  # correct way to get row count
+    
+    summary = f"Valuation insights for {state['country']} ..."
 
     if row_count == 0 or not df.columns:
         summary = (
@@ -32,10 +34,10 @@ def valuator_agent(state: AgentState) -> AgentState:
         )
     else:
         # Safe stats – use .mean() with ignore_nulls
-        avg_price = df["price"].mean()
-        median_price = df["price"].median()
-
+        avg_price = df["price"].mean() if "price" in df.columns else None
+        median_price = df["price"].median() if "price" in df.columns else None
         top_areas_str = "N/A"
+        
         if "location" in df.columns:
             top_areas = (
                 df.group_by("location")
@@ -48,10 +50,12 @@ def valuator_agent(state: AgentState) -> AgentState:
                 for row in top_areas.iter_rows(named=True)
             )
 
+        avg_str = f"{avg_price:,.0f}" if avg_price is not None else "N/A"
+        median_str = f"{median_price:,.0f}" if median_price is not None else "N/A" 
         summary = (
             f"Valuation insights for {state['country']} ({row_count} records):\n"
-            f"Average price: {avg_price:,.0f if avg_price is not None else 'N/A'}\n"
-            f"Median price: {median_price:,.0f if median_price is not None else 'N/A'}\n"
+            f"Average price: {avg_str}\n"
+            f"Median price: {median_str}\n"
             f"Top areas by avg price:\n{top_areas_str}"
         )
 
@@ -66,5 +70,6 @@ def valuator_agent(state: AgentState) -> AgentState:
 
     return {
         "messages": state["messages"] + [AIMessage(content=response.content)],
+        "valuation_summary": summary,
         "data_summary": summary
     }

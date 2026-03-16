@@ -15,7 +15,8 @@ llm = get_llm()
 
 def compliance_agent(state: AgentState) -> AgentState:
     rules_path = Path(f"rules/{COUNTRY.lower()}_compliance.json")
-    
+    summary = f"Compliance overview for {state['country']}:\n{rules_text}"
+
     if not rules_path.exists():
         summary = f"No compliance rules found for {state['country']}."
     else:
@@ -44,5 +45,6 @@ def compliance_agent(state: AgentState) -> AgentState:
 
     return {
         "messages": state["messages"] + [AIMessage(content=response.content)],
+        "compliance_summary": summary,
         "data_summary": summary
     }

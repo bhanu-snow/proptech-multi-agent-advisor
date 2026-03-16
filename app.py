@@ -36,12 +36,13 @@ if prompt := st.chat_input("Ask about real estate (e.g., 'Summarize Dubai market
             final_response = result["messages"][-1].content
             st.markdown(final_response)
             
-            # Try to collect summaries from state (you may need to expose them better later)
-            # For MVP: use last message or hard-code placeholders
-            market_sum = "Market summary not captured"   # improve later by returning from agents
-            val_sum = "Valuation summary not captured"
-            comp_sum = "Compliance summary not captured"
-            
+            final_state = result
+
+            # Pull summaries from final state   
+            market_sum = final_state.get("market_summary", "No market data processed")
+            val_sum    = final_state.get("valuation_summary", "No valuation performed")
+            comp_sum   = final_state.get("compliance_summary", "No compliance check performed")
+            st.write("Debug summaries:", final_state.get("market_summary"), final_state.get("valuation_summary"), final_state.get("compliance_summary"))
             # Show download button
             pdf_buffer = generate_pdf_report(
                 country=COUNTRY,
