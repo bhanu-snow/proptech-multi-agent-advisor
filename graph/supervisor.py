@@ -1,7 +1,8 @@
+import json
 from typing import TypedDict, Annotated, Sequence, Literal
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import MemorySaver
-from langchain_core.messages import BaseMessage, HumanMessage
+from langchain_core.messages import BaseMessage, HumanMessage,AIMessage
 from langchain_core.prompts import ChatPromptTemplate
 from utils.llm_factory import get_llm
 from graph.market_researcher import market_researcher  
@@ -14,29 +15,67 @@ class AgentState(TypedDict):
 
 llm = get_llm()
 
-def supervisor(state: AgentState) -> AgentState:
-    last_msg = state["messages"][-1].content.lower().strip()
+def supervisor(state: AgentState) -> dict:
+    last_msg = state["messages"][-1].content.strip()
 
-    # Greetings / chit-chat → route to researcher (which now handles them fast)
-    if len(last_msg) < 20 and any(g in last_msg for g in ["hi", "hello", "hey", "sup", "yo", "greetings"]):
-        return {"next_agent": "market_researcher"}
+    # Very short messages → quick bypass
+    if len(last_msg) <= 5:
+        reply = "Hey! 👋 Drop your real estate question whenever you're ready."
+        return {
+            "messages": state["messages"] + [AIMessage(content=reply)],
+            "next_agent": "end"
+        }
 
-    # Simple keyword routing (modern: can be replaced with small LLM classifier later)
-    if any(word in last_msg for word in ["value", "worth", "valuation", "price estimate", "fair price"]):
-        next_agent = "valuator"
-    elif any(word in last_msg for word in ["market", "trend", "overview", "summarize", "average"]):
-        next_agent = "market_researcher"
+    # Let LLM decide topic + reply in one call
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", """You are the front-door supervisor for a specialized real-estate AI assistant focused ONLY on India, UAE, and KSA markets.
+
+Your job:
+1. Decide if the user query is related to real estate in these countries.
+2. If YES → classify into exactly one of: 'market_research' or 'valuation'
+3. If NO (off-topic, greeting, chit-chat, unrelated) → write a short, friendly, natural reply.
+   Be warm and engaging, match the user's tone, but gently remind the topic if needed.
+
+Response format (JSON only, no extra text):
+{{
+  "on_topic": true/false,
+  "category": "market_research" / "valuation" / null,
+  "reply": "your natural response text here (only if on_topic=false)"
+}}"""),
+        ("human", f"User message: {last_msg}")
+    ])
+
+    chain = prompt | llm
+    raw_response = chain.invoke({}).content.strip()
+
+    try:
+        decision = json.loads(raw_response)
+    except Exception as e:
+        # Fallback if JSON fails or LLM hallucinates
+        decision = {
+            "on_topic": False,
+            "category": None,
+            "reply": "Sorry, could you rephrase that? I'm here for real estate questions about India, UAE, KSA 🏠"
+        }
+
+    if decision.get("on_topic", False):
+        category = decision.get("category")
+        if category == "market_research":
+            next_agent = "market_researcher"
+        elif category == "valuation":
+            next_agent = "valuator"
+        else:
+            next_agent = "end"  # safety net
     else:
-        # Fallback: let LLM decide
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", "Classify the user query into one category: market_research or valuation."),
-            ("human", f"Query: {last_msg}\nRespond only with 'market_research' or 'valuation'"),
-        ])
-        chain = prompt | llm
-        decision = chain.invoke({}).content.strip().lower()
-        next_agent = "market_researcher" if "market" in decision else "valuator"
+        reply = decision.get("reply", "Hey! What's your real estate question today? 😊")
+        return {
+            "messages": state["messages"] + [AIMessage(content=reply)],
+            "next_agent": "end"
+        }
 
     return {"next_agent": next_agent}
+
+
 
 workflow = StateGraph(state_schema=AgentState)
 
