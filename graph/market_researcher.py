@@ -1,27 +1,23 @@
-from typing import TypedDict, Annotated, Sequence
 from langchain_core.messages import BaseMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate
 from utils.llm_factory import get_llm
 from tools.data_fetcher import get_real_estate_data
-
-class AgentState(TypedDict):
-    messages: Annotated[Sequence[BaseMessage], "add_messages"]
-    country: str
-    data_summary: str
+from .state import AgentState
 
 llm = get_llm()
 # Market Researcher Agent node
 def market_researcher(state: AgentState) -> AgentState:
-    df_lazy = get_real_estate_data(limit=200)  # small limit for speed
+    country = state["country"]
+    df_lazy = get_real_estate_data(state,limit=200)  # small limit for speed
     df = df_lazy.collect()                     # materialize here
 
     row_count = df.shape[0]                     # correct way
-    summary = f"Loaded {row_count} records for {state['country']}."
+    summary = f"Loaded {row_count} records for {country}."
 
     if row_count == 0 or not df.columns:
-        summary = f"No data loaded for {state['country']} (empty file or loading issue)."
+        summary = f"No data loaded for {country} (empty file or loading issue)."
     else:
-        summary = f"Loaded {row_count} records for {state['country']}. "
+        summary = f"Loaded {row_count} records for {country}. "
         if "price" in df.columns:
             summary += f"Avg price: {df['price'].mean():,.0f} | "
         if "location" in df.columns:

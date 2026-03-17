@@ -1,13 +1,12 @@
+from graph.state import AgentState
 import polars as pl
-from pathlib import Path
 from config import get_data_path, COUNTRY
 
-def get_real_estate_data(limit: int = 500) -> pl.LazyFrame:
-    """Load real estate data lazily, with robust column normalization."""
-    path = get_data_path()
 
+def get_real_estate_data(state: AgentState, limit: int = 500) -> pl.LazyFrame:
+    country = state["country"]  # ← from state, not global
+    path = get_data_path(country=country)  # get path based on country in state
     df = pl.scan_csv(path, infer_schema_length=100000)
-
     # More comprehensive mapping (case-insensitive check)
     rename_map = {}
     columns_lower = {c.lower(): c for c in df.columns}

@@ -18,8 +18,8 @@ DATA_PATHS = {
     "INDIA": DATA_DIR / "india_rera_sample.csv",
 }
 
-def get_data_path():
-    path = DATA_PATHS.get(COUNTRY)
+def get_data_path(country: str = COUNTRY) -> Path:
+    path = DATA_PATHS.get(country)
     if path and path.exists():
         return path
-    raise FileNotFoundError(f"No data file for {COUNTRY}. Checked: {path}")
+    raise FileNotFoundError(f"No data file for {country}. Checked: {path}")

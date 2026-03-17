@@ -1,34 +1,30 @@
-from typing import TypedDict, Annotated, Sequence
 from langchain_core.messages import BaseMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate
 from utils.llm_factory import get_llm
 from tools.data_fetcher import get_real_estate_data
 import polars as pl
-
-class AgentState(TypedDict):
-    messages: Annotated[Sequence[BaseMessage], "add_messages"]
-    country: str
-    data_summary: str
+from .state import AgentState
 
 llm = get_llm()
 
 def valuator_agent(state: AgentState) -> AgentState:
-    df_lazy = get_real_estate_data(limit=1000)
+    country = state["country"]
+    df_lazy = get_real_estate_data(state, limit=1000)
     df = df_lazy.collect()  # materialize early once
 
     row_count = df.shape[0]  # correct way to get row count
     
-    summary = f"Valuation insights for {state['country']} ..."
+    summary = f"Valuation insights for {country} ..."
 
     if row_count == 0 or not df.columns:
         summary = (
-            f"No usable data loaded for {state['country']} "
+            f"No usable data loaded for {country} "
             f"(empty after normalization or file issue). "
             f"Available columns: {df.columns if df.columns else 'none'}"
         )
     elif "price" not in df.columns:
         summary = (
-            f"No 'price' column found in {state['country']} data after normalization. "
+            f"No 'price' column found in {country} data after normalization. "
             f"Available columns: {', '.join(df.columns)}. "
             f"Valuation not possible."
         )
@@ -53,7 +49,7 @@ def valuator_agent(state: AgentState) -> AgentState:
         avg_str = f"{avg_price:,.0f}" if avg_price is not None else "N/A"
         median_str = f"{median_price:,.0f}" if median_price is not None else "N/A" 
         summary = (
-            f"Valuation insights for {state['country']} ({row_count} records):\n"
+            f"Valuation insights for {country} ({row_count} records):\n"
             f"Average price: {avg_str}\n"
             f"Median price: {median_str}\n"
             f"Top areas by avg price:\n{top_areas_str}"
